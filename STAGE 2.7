@@ -1,0 +1,278 @@
+#Task 2.7
+#Public Health
+
+#NHANES is a program run by the CDC to assess the health and nutritional status of adults and children in the US. 
+#It combines survey questions and physical examinations, including medical and physiological measurements and laboratory tests, and examines a representative sample of about 5,000 people each year. 
+#The data is used to determine the prevalence of diseases and risk factors, establish national standards, and support epidemiology studies and health sciences research. 
+#This information helps to develop public health policy, design health programs and services, and expand the nation's health knowledge.
+
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(pillar)
+library(tidyverse)
+library(gridExtra)
+library(mice)
+library(DataExplorer)
+# Import dataset
+pub_data <- read.csv("https://raw.githubusercontent.com/HackBio-Internship/public_datasets/main/R/nhanes.csv", header = TRUE)
+
+
+# Identifying missing values
+sum(is.na(pub_data))
+
+plot_missing(pub_data)
+
+#Process all NA (either by deleting or by converting to zero)
+na.omit(pub_data)
+
+# Replace all NA with 0
+pub_data1 <- pub_data
+pub_data1[is.na(pub_data1)] <- 0
+
+# Check if all NA are replaced
+sum(is.na(pub_data1)) 
+
+# View data
+head(pub_data1)
+plot_missing(pub_data1)
+
+
+# Histogram for BMI
+df <- pub_data1
+#Use ggplot's subset function to filter out 0s and aesthetic mapping to establish the axes
+
+plot1 <- ggplot(subset(df,BMI!=0), aes(x = BMI)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black") + #Customize the size and colors of the bars
+  theme_minimal() + #Customize the plot's theme
+  ggtitle("Distribution of BMI") + #Add a title to the plot using ggtitle function
+  xlab("BMI") +
+  ylab("Count")
+
+plot1
+# Histogram for Weight (kg)
+plot2 <- ggplot(subset(df,Weight !=0), aes(x = Weight)) +
+  geom_histogram(binwidth = 5, fill = "darkgreen", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Weight (kg)") +
+  xlab("Weight (kg)") +
+  ylab("Count")
+
+plot2
+
+# Histogram for Weight in Pounds
+# Remove rows that contain 0 in the Weight column
+pub_data2 <- pub_data1[pub_data1$Weight != 0, ]
+
+# Create a new Weight column in pounds by multiplying the old column by 2.2
+pub_data2$Weight_pounds <- pub_data2$Weight * 2.2
+
+# Plot histogram
+plot3 <- ggplot(pub_data2, aes(x = Weight_pounds)) +
+  geom_histogram(binwidth = 10, fill = "purple", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Weight (lbs)") +
+  xlab("Weight (lbs)") +
+  ylab("Count")
+plot3
+
+# Histogram for Age
+plot4 <- ggplot(subset(df, Age !=0), aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "red", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Age") +
+  xlab("Age") +
+  ylab("Count")
+plot4
+
+grid.arrange(plot1,plot2,plot3,plot4, ncol=2, nrow=2) #Represent all charts in a single plot
+
+
+# Calculating the mean 60-second pulse rate for all participants
+mean_pulserate <- mean(pub_data1$Pulse [pub_data1$Pulse !=0], na.rm=TRUE) #Use na.rm and !=0 to exclude the 0s in the column
+print(paste("The average pulse rate of all participants is", mean_pulserate))
+
+# Calculating the range of values for diastolic blood pressure in all participants
+
+#Determine the range by identifying the min and max values on the column
+
+Min_BPDia <- min(pub_data1$BPDia)
+Max_BPDia <- max(pub_data1$BPDia)
+
+paste0("Range of Diastolic Blood Pressure:", " ", Min_BPDia, "-", Max_BPDia) #Use Paste0 to return the range without any extra space
+
+#Calculating the Variance of all incomes
+variance_Income <- var(pub_data1$Income [pub_data1$Income != 0], na.rm = TRUE)
+print(paste("Variance of all incomes:", variance_Income))
+
+#Calculating the Standard Deviation of all incomes
+sd(pub_data1$Income [pub_data1$Income !=0], na.rm = TRUE)
+
+# Visualizing the relationship between weight and height using Scatter plots
+
+#Distribution of Weight and Height across Gender
+plot5 <- ggplot(subset(df,Weight !=0 & Height !=0 & Gender != "0"), aes(x = Weight, y = Height,
+                                                                        color = Gender))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Gender",
+       x = "Weight (kg)", y = "Height (cm)")
+
+#Distribution of Weight and Height across Diabetes
+plot6 <- ggplot(subset(df, Weight !=0 & Height !=0 & Diabetes != "0"), aes(x = Weight, y = Height,
+                                                                           color = Diabetes))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Diabetes",
+       x = "Weight (kg)", y = "Height (cm)")
+
+#Distribution of Weight and Height across Smoking Status
+plot7 <-ggplot(subset(df, Weight !=0 & Height !=0 & SmokingStatus != "0"), aes(x = Weight, y = Height,
+                                                                               color = SmokingStatus))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Smoking Status",
+       x = "Weight (kg)", y = "Height (cm)")
+
+grid.arrange(plot5,plot6,plot7, ncol=2, nrow=2) #Represent all charts in a single plot
+
+#Calculating the t-tests between some variables
+
+#t-test between Age and Gender
+#Use  Welch's Two sample t-test to conduct t-tests between numerical and categorical columns
+Age_ttest <- t.test(Age~Gender,data = pub_data1,subset =Age !=0 & Gender !="0")
+print(Age_ttest)
+
+#t-test between BMI and Diabetes
+BMI_ttest <- t.test(BMI~Diabetes,data = pub_data1,subset =BMI !=0 & Diabetes !="0")
+print(BMI_ttest)
+
+#t-test between Alcohol Year and Relationship Status
+AlcoholYear_ttest <- t.test(AlcoholYear~RelationshipStatus,data = pub_data1,subset =AlcoholYear !=0 & RelationshipStatus !="0")
+print(AlcoholYear_ttest)
+
+#Results of the t-tests
+#Based on the p-value for the Age and Gender t-test, there is no statistically significant difference in age between males and females
+#The p-value for the BMI and Diabetes t-test suggests a major difference in BMI between people with diabetes and otherwise
+#The p-value for the Alcohol year and Relationship status indicates a difference in alcohol consumption  between single and committed people
+
+
+#Visualizing the distribution of BMI, Weight, Weight in Pounds and Age using Histograms
+
+# Histogram for BMI
+df <- pub_data1
+#Use ggplot's subset function to filter out 0s and aesthetic mapping to establish the axes
+
+plot1 <- ggplot(subset(df,BMI!=0), aes(x = BMI)) +
+  geom_histogram(binwidth = 2, fill = "steelblue", color = "black") + #Customize the size and colors of the bars
+  theme_minimal() + #Customize the plot's theme
+  ggtitle("Distribution of BMI") + #Add a title to the plot using ggtitle function
+  xlab("BMI") +
+  ylab("Count")
+
+# Histogram for Weight (kg)
+plot2 <- ggplot(subset(df,Weight !=0), aes(x = Weight)) +
+  geom_histogram(binwidth = 5, fill = "darkgreen", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Weight (kg)") +
+  xlab("Weight (kg)") +
+  ylab("Count")
+
+# Histogram for Weight in Pounds
+# Remove rows that contain 0 in the Weight column
+pub_data1_clean <- pub_data1[pub_data1$Weight != 0, ]
+
+# Create a new Weight column in pounds by multiplying the old column by 2.2
+pub_data1_clean$Weight_pounds <- pub_data1_clean$Weight * 2.2
+
+# Plot histogram
+plot3 <- ggplot(pub_data1_clean, aes(x = Weight_pounds)) +
+  geom_histogram(binwidth = 10, fill = "purple", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Weight (lbs)") +
+  xlab("Weight (lbs)") +
+  ylab("Count")
+
+
+# Histogram for Age
+plot4 <- ggplot(subset(df, Age !=0), aes(x = Age)) +
+  geom_histogram(binwidth = 5, fill = "red", color = "black") +
+  theme_minimal() +
+  ggtitle("Distribution of Age") +
+  xlab("Age") +
+  ylab("Count")
+
+grid.arrange(plot1,plot2,plot3,plot4, ncol=2, nrow=2) #Represent all charts in a single plot
+
+
+# Calculating the mean 60-second pulse rate for all participants
+mean_pulserate <- mean(pub_data1$Pulse [pub_data1$Pulse !=0], na.rm=TRUE) #Use na.rm and !=0 to exclude the 0s in the column
+print(paste("The average pulse rate of all participants is", mean_pulserate))
+
+# Calculating the range of values for diastolic blood pressure in all participants
+
+#Determine the range by identifying the min and max values on the column
+
+Min_BPDia <- min(pub_data1$BPDia)
+Max_BPDia <- max(pub_data1$BPDia)
+
+paste0("Range of Diastolic Blood Pressure:", " ", Min_BPDia, "-", Max_BPDia) #Use Paste0 to return the range without any extra space
+
+#Calculating the Variance of all incomes
+variance_Income <- var(pub_data1$Income [pub_data1$Income != 0], na.rm = TRUE)
+print(paste("Variance of all incomes:", variance_Income))
+
+#Calculating the Standard Deviation of all incomes
+sd(pub_data1$Income [pub_data1$Income !=0], na.rm = TRUE)
+
+# Visualizing the relationship between weight and height using Scatter plots
+
+#Distribution of Weight and Height across Gender
+plot5 <- ggplot(subset(df,Weight !=0 & Height !=0 & Gender != "0"), aes(x = Weight, y = Height,
+                                                                        color = Gender))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Gender",
+       x = "Weight (kg)", y = "Height (cm)")
+
+#Distribution of Weight and Height across Diabetes
+plot6 <- ggplot(subset(df, Weight !=0 & Height !=0 & Diabetes != "0"), aes(x = Weight, y = Height,
+                                                                           color = Diabetes))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Diabetes",
+       x = "Weight (kg)", y = "Height (cm)")
+
+#Distribution of Weight and Height across Smoking Status
+plot7 <-ggplot(subset(df, Weight !=0 & Height !=0 & SmokingStatus != "0"), aes(x = Weight, y = Height,
+                                                                               color = SmokingStatus))+
+  geom_point() +
+  theme_minimal() +
+  labs(title = "Weight vs. Height by Smoking Status",
+       x = "Weight (kg)", y = "Height (cm)")
+
+grid.arrange(plot5,plot6,plot7, ncol=2, nrow=2) #Represent all charts in a single plot
+
+#Calculating the t-tests between some variables
+
+#t-test between Age and Gender
+#Use  Welch's Two sample t-test to conduct t-tests between numerical and categorical columns
+Age_ttest <- t.test(Age~Gender,data = pub_data1,subset =Age !=0 & Gender !="0")
+print(Age_ttest)
+
+#t-test between BMI and Diabetes
+BMI_ttest <- t.test(BMI~Diabetes,data = pub_data1,subset =BMI !=0 & Diabetes !="0")
+print(BMI_ttest)
+
+#t-test between Alcohol Year and Relationship Status
+Alcohol_ttest <- t.test(AlcoholYear~RelationshipStatus,data = pub_data1,subset =AlcoholYear !=0 & RelationshipStatus !="0")
+print(Alcohol_ttest)
+
+#Results of the t-tests
+#Based on the p-value for the Age and Gender t-test, there is no statistically significant difference in age between males and females
+#The p-value for the BMI and Diabetes t-test suggests a major difference in BMI between people with diabetes and people without
+#The p-value for the Alcohol year and Relationship status indicates a difference in alcohol consumption  between single and committed people
+
+
