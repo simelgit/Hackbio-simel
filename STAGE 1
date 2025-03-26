@@ -1,0 +1,164 @@
+# Define a function for DNA to protein translation
+DNA_to_protein <- function(dna_sequence) {
+  
+  # Replace Thymine (T) with Uracil (U) for mRNA transcription
+  mrna_sequence <- gsub("T", "U", dna_sequence)
+  
+  # Define the genetic code as a named vector
+  codon_table <- c(
+    UUU="F", UUC="F", UUA="L", UUG="L", UCU="S", UCC="S", UCA="S", UCG="S",
+    UAU="Y", UAC="Y", UAA="STOP", UAG="STOP", UGA="STOP", UGU="C", UGC="C",
+    UGG="W", CUU="L", CUC="L", CUA="L", CUG="L", CCU="P", CCC="P", CCA="P",
+    CCG="P", CAU="H", CAC="H", CAA="Q", CAG="Q", CGU="R", CGC="R", CGA="R",
+    CGG="R", AUU="I", AUC="I", AUA="I", AUG="M", ACU="T", ACC="T", ACA="T",
+    ACG="T", AAU="N", AAC="N", AAA="K", AAG="K", AGU="S", AGC="S", AGA="R",
+    AGG="R", GUU="V", GUC="V", GUA="V", GUG="V", GCU="A", GCC="A", GCA="A",
+    GCG="A", GAU="D", GAC="D", GAA="E", GAG="E", GGU="G", GGC="G", GGA="G",
+    GGG="G"
+  )
+  
+  # Split the sequence into codons
+  codons <- unlist(strsplit(mrna_sequence, ""))
+  codons <- paste0(codons[seq(1, length(codons), by = 3)], 
+                   codons[seq(2, length(codons), by = 3)], 
+                   codons[seq(3, length(codons), by = 3)])
+  
+  # Translate codons into protein sequence
+  protein <- paste(codon_table[codons], collapse = "")
+  
+  return(protein)
+}
+
+# Testing the Function
+dna_seq <- "CGUATGAUGTTTGGGTAA"
+protein_seq <- translate_DNA_to_protein(dna_seq)
+print(protein_seq)
+
+#### PART 2
+
+# Define the logistic growth function
+logistic_growth <- function(time, K=1000, P0=10, r=0.2, lag_phase=5, exp_phase=10) {
+  t_adjusted <- time - lag_phase
+  t_adjusted[t_adjusted < 0] <- 0  # No growth before lag phase
+  P <- K / (1 + ((K - P0) / P0) * exp(-r * t_adjusted))
+  return(P)
+}
+
+# Example Plot
+time_values <- seq(0, 100, by=1)
+growth_curve <- logistic_growth(time_values, K=1000, P0=10, r=0.3, lag_phase=5, exp_phase=15)
+
+plot(time_values, growth_curve, type="l", col="blue", lwd=2, 
+     xlab="Time", ylab="Population Size", main="Logistic Growth Curve")
+
+###ANOTHER WAY
+# function 
+
+# n = Initial population size/concentration
+# t = Time 
+# r = Growth rate
+# The carrying capacity / maximum concentration (K) is assumed 1
+
+logistic_growth<-function(n,r,time) { 
+  
+  growth<- 1/(1+((1-n)/n)*exp(-r*time))
+  return (growth)
+}
+
+# To randomize time - This is defined outside the function to try out different scenarios
+
+time<-seq(0,1000,by=0.01)
+
+# Run the function to initialize
+
+od<-logistic_growth(0.1,0.1,time) 
+
+# Set up the plot
+
+plot(time,od,type="l",xlab="Time",ylab="Concentration",ylim=c(0,1), main = "OD600 vs Time")
+
+
+# Define the logistic growth function
+logistic_growth <- function(time, K=1000, P0=10, r=0.2, lag_phase=5, exp_phase=10) {
+  t_adjusted <- time - lag_phase
+  t_adjusted[t_adjusted < 0] <- 0  # No growth before lag phase
+  P <- K / (1 + ((K - P0) / P0) * exp(-r * t_adjusted))
+  return(P)
+}
+
+# To generate 100 lines in one plot
+
+for (i in 1:100) {
+  random_init_od<-runif(1,0.01,0.99) # Random initial optical density
+  random_growth_rate <- runif(1,0.01,1) # Random growth rate
+  od <- logistic_growth(random_init_od, random_growth_rate, time) # Run the function once again with randomly generated values
+  lines(time, od, col = rgb(runif(1), runif(1), runif(1), 0.5)) # Add randomly generated lines
+}
+
+# Generate a dataframe with 100 different growth curves
+growth_data <- data.frame()
+
+set.seed(42)
+for (i in 1:100) {
+  time_values <- seq(0, 100, by=1)
+  lag_phase <- sample(3:10, 1)  # Randomized lag phase
+  exp_phase <- sample(8:20, 1)  # Randomized exponential phase
+  growth_curve <- logistic_growth(time_values, K=1000, P0=10, r=0.3, 
+                                  lag_phase=lag_phase, exp_phase=exp_phase)
+  
+  temp_df <- data.frame(Time = time_values, Population = growth_curve, Curve_ID = i)
+  growth_data <- rbind(growth_data, temp_df)
+}
+
+# Print first few rows of the generated data
+head(growth_data)
+
+
+# Function to find the time when population reaches 80% of K
+time_to_80_percent <- function(time, K=1000, P0=10, r=0.2, lag_phase=5, exp_phase=10) {
+  population <- logistic_growth(time, K, P0, r, lag_phase, exp_phase)
+  target_population <- 0.8 * K
+  time_80 <- min(time[population >= target_population])
+  return(time_80)
+}
+
+# Example usage
+time_values <- seq(0, 100, by=1)
+t_80 <- time_to_80_percent(time_values)
+print(paste("Time to reach 80% of carrying capacity:", t_80))
+
+
+# Function 3: Another way
+# Similar to the function above, the carrying capacity (K) is assumed to be 0.8
+# The logistic growth function described above is reversed in case of this function
+
+carrying_capacity_80<-function(init_od,final_od,growth_rate) {
+  
+  time_for_capacity<-(log(((0.8/final_od)-1)/((0.8-init_od)/init_od))/growth_rate)*-1
+  return(paste("The time it takes to reach 80% of the carrying capacity is:", time_for_capacity,"hours"))
+}
+
+# Test the function! 
+
+carrying_capacity_80(0.1,0.7,0.3)
+
+
+# Function to calculate Hamming Distance
+hamming_distance <- function(str1, str2) {
+  # Make both strings the same length by padding with "_"
+  max_length <- max(nchar(str1), nchar(str2))
+  str1 <- paste0(str1, strrep("_", max_length - nchar(str1)))
+  str2 <- paste0(str2, strrep("_", max_length - nchar(str2)))
+  
+  # Compare character by character
+  differences <- sum(unlist(strsplit(str1, "")) != unlist(strsplit(str2, "")))
+  
+  return(differences)
+}
+
+# Example usage
+slack_handle <- "simel"
+twitter_handle <- "neend"
+hamming_dist <- hamming_distance(slack_handle, twitter_handle)
+
+print(paste("Hamming Distance:", hamming_dist))
