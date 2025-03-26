@@ -1,0 +1,105 @@
+#STAGE 2.4
+
+#Proteins structures are known to be strongly connected to their functions. 
+#However, at the amino acid level, not all amino acids contribute to structure and function equally. Galardini and colleagues decided to investigate the impact of all possible individual, non synonymous nonsense mutations on the structure and function of protein.
+#The functional impact was computed as SIFT scores and the structural impact was calculated as FoldX Score (in kCal/mol).
+
+#Import both sift and foldx datasets; in both datasets, create a column specific_Protein_aa which will be a cantenation of the Protein and Amino_acid columns such that If you have Protein A5A607 and Amino_acid E63D, you have specific_Protein_aa A5A607_E63D
+
+library(ggplot2)
+library(tidyr)
+library(readr)
+
+data_sift <- read.table("https://raw.githubusercontent.com/HackBio-Internship/public_datasets/main/R/datasets/sift.tsv", header = TRUE, sep = "", fill = TRUE)
+View(data_sift)
+
+data_foldx <- read.table("https://raw.githubusercontent.com/HackBio-Internship/public_datasets/main/R/datasets/foldX.tsv", header = TRUE, sep = "", fill = TRUE)
+View(data_foldx)
+
+
+# Create specific_Protein_aa
+data_sift$specific_Protein_aa <- paste(data_sift$Protein, data_sift$Amino_acid, sep = "_")
+data_foldx$specific_Protein_aa <- paste(data_foldx$Protein, data_foldx$Amino_acid, sep = "_")
+
+# Merge datasets on specific_Protein_aa
+final_data <- merge(data_sift, data_foldx, by = "specific_Protein_aa")
+View(final_data)
+#According to the authors;
+#A SIFT Score below 0.05 is deleterious
+#A FoldX score greater than 2 kCal/mol is deleterious
+#Using the criteria above, Find all mutations that have a SIFT score below 0.05 and FoldX Score above 2 (i.e: Mutations that affect both structure and function)
+
+# Filter for deleterious mutations based on SIFT and FoldX criteria
+deleterious_mutations <- final_data %>%
+  filter(sift_Score < 0.05 & foldX_Score > 2)
+
+# View result
+View(deleterious_mutations)
+
+
+
+#####Study the amino acid substitution nomenclature
+#The amino acid substitution is often represented like E63D, 
+#which means Glutamic acid (E) at position 63 is replaced by Aspartic acid (D).
+#So, the first amino acid letter is the original amino acid.
+
+#Investigate for the amino acid that has the most functional and structural impact
+#Hint: Using the amino acid column, find a way to select the first amino acid. 
+#Generate a frequency table for all the amino acids
+mutation_aa <- c()
+
+for (aa in deleterious_mutations$Amino_Acid.x){
+  mutation_aa<- c(mutation_aa,substr(aa,1,1))
+}
+
+aa_freq <- table(mutation_aa)
+
+
+#Using the amino frequency table above,
+#generate a barplot and pie chart to represent the frequency of the amino acids.
+
+# Barplot of amino acid frequencies
+barplot(aa_freq, 
+        main = "Frequency of Amino Acids Mutations",
+        xlab = "Amino Acids", 
+        ylab = "Frequency", 
+        col = "skyblue", 
+        las = 2)
+
+# Pie chart of amino acid frequencies
+pie(aa_freq, 
+    main = "Prequency of Amino Acids Mutation", 
+    col = rainbow(length(aa_freq)))
+
+#Briefly describe the amino acid with the highest impact on protein structure and function
+#The amino acid Glycine (G) has the highest impact on protein structure and function.
+#Glycine is a small, flexible amino acid, often found in tight turns or flexible regions. 
+#Its substitution may disrupt flexibility or introduce steric hindrance, leading to structural destabilization and loss of function.
+
+
+#What can you say about the structural property and functional property of amino acids with more than 100 occurences.
+# Amino acids with frequency > 100
+aa_high_freq <- subset(aa_freq, aa_freq > 100)
+print(aa_high_freq)
+
+# Barplot for high-frequency amino acids
+barplot(aa_high_freq,
+        main = "Amino Acids Occurring More Than 100 Times",
+        xlab = "Amino Acid",
+        ylab = "Frequency",
+        col = "orange",
+        las = 2)
+
+# Pie chart for high-frequency amino acids
+pie(aa_high_freq,
+    main = "Pie Chart of Amino Acids with >100 Occurrences",
+    col = rainbow(length(aa_high_freq)))
+
+
+#Amino acids with more than 100 occurrences are highly mutable and may represent key residues prone to substitution. 
+#Their high frequency suggests they are common targets of variation, potentially due to their location in structurally exposed or functionally critical regions. 
+#Their substitution could be linked to significant changes in structural stability and function.
+
+
+
+
