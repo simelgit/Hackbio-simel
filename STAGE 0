@@ -1,0 +1,26 @@
+#organising information
+my_team<- list(
+  names = c("Simel Masood", "Jane Doe", "John Doe"),
+  slack_usernames = c("@simel", "@janeD", "@johnD"),
+  emails = c("simel.zafar.masood@gmail.com", "jane@gmail.com", "john@gmail.com"),
+  hobbies = c("Reading", "Cycling", "Swimming"),
+  countries = c("USA", "Pakistan", "UK"),
+  disciplines = c("Biotechnology", "Medicine", "Data Science"),
+  preferred_languages = c("R")
+)
+
+# Convert the list into a data frame
+team_df <- data.frame(
+  Name = my_team$names,
+  Slack_Username = my_team$slack_usernames,
+  Email = my_team$emails,
+  Hobby = my_team$hobbies,
+  Country =my_team$countries,
+  Discipline = my_team$disciplines,
+  Preferred_Language =
+    my_team$preferred_languages
+)
+
+# Print 
+print("My Team:")
+print(team_df)
