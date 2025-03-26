@@ -1,0 +1,105 @@
+#stage 2.3 Botany and Plant Science
+
+#Some scientists are trying to engineer mutants for a crop to become resistant to a pesticide
+#They compared the metabolic response of the engineered mutants to the metabolic response of the wild type plants
+#The took readings after 8 and 24 hours
+
+
+#Task 1: 
+#Calculate the difference in metabolic response (ΔM) between the DMSO treatment from the 24 hours treatment for the wild type and mutants
+
+
+library(ggplot2)
+library(tidyr)
+data_url <- 'https://raw.githubusercontent.com/HackBio-Internship/2025_project_collection/refs/heads/main/Python/Dataset/Pesticide_treatment_data.txt'
+data <- read.table(data_url, header = TRUE, sep = "\t", row.names = 1)
+
+# Extract relevant columns for WT and Mutant
+
+wt_dmso <- data %>% filter(grepl("WT_DMSO", rownames(data)))
+wt_24h <- data %>% filter(grepl("WT_pesticide_24h", rownames(data)))
+mutant_dmso <- data %>% filter(grepl("mutant_DMSO", rownames(data)))
+mutant_24h <- data %>% filter(grepl("mutant_pesticide_24h", rownames(data)))
+delta_M_wt <- wt_24h - wt_dmso
+delta_M_mutant <- mutant_24h - mutant_dmso
+delta_M <- data.frame(
+  WT = as.numeric(delta_M_wt),
+  Mutant = as.numeric(delta_M_mutant)
+)
+delta_M$Residual <- delta_M$Mutant - delta_M$WT
+residual_cutoff <- 0.3
+delta_M$Residual_Color <- ifelse(
+  abs(delta_M$Residual) <= residual_cutoff, "Within Cutoff", "Outside Cutoff"
+)
+
+
+#Task 2:
+#Generate a scatter plot showing the difference for ΔM for WT and Mutants
+
+
+#plots
+
+ggplot(delta_M, aes(x = WT, y = Mutant, color = Residual_Color)) +
+  geom_point(size = 3) +  # Scatter plot points
+  geom_abline(slope = 1, intercept = 0, color = "orange", linetype = "dashed") +  # y = x line
+  scale_color_manual(values = c("Within Cutoff" = "grey", "Outside Cutoff" = "salmon")) +  # Color mapping
+  labs(
+    title = "Difference in Metabolic Response (ΔM)",
+    x = "ΔM (WT)",
+    y = "ΔM (Mutant)",
+    color = "Residual Cutoff"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  )
+ggsave("delta_M_residual_plot.png", width = 8, height = 6, dpi = 300)
+
+#Fit a line that satifies a y-intercept of 0 and a slope of 1.
+#Using a residual cut off of your choice (calculated a the difference between the fitted line and each point) calculate the residual of each point on the scatter plot
+#Color metabolites that fall within +/- n of your residual grey. For example, if you have a cut-off of 0.3, color residual values that are within -0.3 and +0.3 grey
+#Color metabolites that fall outside this range salmon.
+#What are these metabolites. How do you explain the trends you see on either direction of the plot?
+# Pick any 6 metabolites that fall outside this range and generate a line plot that spans from their 0h treatment to their 8h and 24hr.
+#What can you say about the plots you see? 
+# Define the outliers 
+
+outliers <- delta_M[abs(delta_M$Residual) > residual_cutoff, ]
+outlier_metabolites <- rownames(outliers)[1:6]  # Select the first 6 metabolites
+metabolite_data <- data[outlier_metabolites, ]
+plot_data <- data.frame(
+  Metabolite = rep(outlier_metabolites, each = 6),
+  Time = rep(c("0h", "8h", "24h"), times = 2 * length(outlier_metabolites)),
+  Treatment = rep(c("WT", "Mutant"), each = 3, times = length(outlier_metabolites)),
+  Value = as.numeric(t(metabolite_data))
+)
+ggplot(plot_data, aes(x = Time, y = Value, color = Treatment, group = Treatment)) +
+  geom_line(size = 1) +
+  geom_point(size = 3) +
+  facet_wrap(~ Metabolite, scales = "free_y") +
+  labs(
+    title = "Metabolite Levels Over Time (0h, 8h, 24h)",
+    x = "Time",
+    y = "Metabolite Level"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 16, face = "bold"),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    strip.text = element_text(size = 12, face = "bold")
+  )
+
+# Save the plot 
+
+ggsave("metabolite_line_plots.png", width = 10, height = 8, dpi = 300)
+
+
+# Findings: Some metabolites show distinct responses in mutants, 
+#hinting at potential metabolic shifts linked to pesticide resistance.
+
+
+
+
